@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint install.sh
+        run: shellcheck install.sh
+
+      - name: Verify all declared skills exist
+        run: |
+          # Extract ALL_SKILLS from install.sh and check each .md file exists
+          mapfile -t skills < <(grep -oP '(?<=")\w[\w-]+(?=")' install.sh | sort -u)
+          failed=0
+          for skill in "${skills[@]}"; do
+            if [[ ! -f "skills/${skill}.md" ]]; then
+              echo "MISSING: skills/${skill}.md (declared in ALL_SKILLS but not found)"
+              failed=1
+            else
+              echo "OK: skills/${skill}.md"
+            fi
+          done
+          exit $failed
+
+      - name: Check README documents all skills
+        run: |
+          mapfile -t skills < <(grep -oP '(?<=")\w[\w-]+(?=")' install.sh | sort -u)
+          failed=0
+          for skill in "${skills[@]}"; do
+            if ! grep -q "/${skill}" README.md; then
+              echo "WARNING: /${skill} not documented in README.md"
+              failed=1
+            fi
+          done
+          exit $failed
