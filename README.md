@@ -1,28 +1,103 @@
 # NexSkills
 
 A collection of generic Copilot CLI skill files for software development
-workflows, installable into any project via a single `curl | bash` command.
+workflows, installable into any project in seconds.
 
-## Quick start
+## Installation
+
+### Linux / macOS
 
 ```bash
 # Install all skills into .claude/commands/ in your project
 curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash
 ```
 
-Or install specific skills only:
+Install specific skills only:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash -s -- \
   --skills peer-review,implement-review
 ```
 
-### Options
+Install into a custom directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash -s -- \
+  --target ~/myproject/.claude/commands
+```
+
+---
+
+### Windows (PowerShell)
+
+```powershell
+# Install all skills into .claude\commands\ in your project
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh" `
+  -OutFile "$env:TEMP\nexskills-install.sh"
+bash "$env:TEMP\nexskills-install.sh"
+```
+
+> **Requires** Git Bash, WSL, or any shell that provides `bash` and `curl`.
+> Git for Windows includes both — download from https://git-scm.com/download/win
+
+Install specific skills only (Git Bash / WSL):
+
+```bash
+bash "$TEMP/nexskills-install.sh" --skills peer-review,implement-review
+```
+
+---
+
+### Windows (WSL)
+
+Open your WSL terminal and run the same command as Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash
+```
+
+To install into a Windows-side project from WSL, use the mounted path:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | \
+  bash -s -- --target /mnt/c/Users/$USER/myproject/.claude/commands
+```
+
+---
+
+### Manual install (any OS)
+
+If you cannot run shell scripts, download skill files directly and place them
+in your project's `.claude/commands/` directory:
+
+```
+https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/implement-next.md
+https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/peer-review.md
+https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/implement-review.md
+https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/plan-milestone.md
+https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/show-changes.md
+```
+
+On Windows you can do this with PowerShell (no shell required):
+
+```powershell
+$base = "https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills"
+$dest = ".claude\commands"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+@("implement-next","peer-review","implement-review","plan-milestone","show-changes") | ForEach-Object {
+    Invoke-WebRequest "$base/$_.md" -OutFile "$dest\$_.md"
+    Write-Host "Installed $_"
+}
+```
+
+---
+
+### Installer options
 
 | Flag | Description |
 |------|-------------|
 | `--target DIR` | Install into a custom directory (default: `.claude/commands`) |
-| `--skills NAMES` | Comma-separated skill names to install (default: all) |
+| `--skills NAMES` | Comma-separated list of skills to install (default: all) |
 | `--list` | Print available skills and exit |
 | `--force` | Overwrite existing skill files |
 
@@ -71,10 +146,23 @@ existing codebase structure.
 
 ## Updating
 
-Re-run the installer with `--force` to pull the latest version of all skills:
+Re-run the installer with `--force` to pull the latest version of all skills.
+
+**Linux / macOS / WSL:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash -s -- --force
+```
+
+**Windows (PowerShell — manual):**
+
+```powershell
+$base = "https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills"
+$dest = ".claude\commands"
+@("implement-next","peer-review","implement-review","plan-milestone","show-changes") | ForEach-Object {
+    Invoke-WebRequest "$base/$_.md" -OutFile "$dest\$_.md" -Force
+    Write-Host "Updated $_"
+}
 ```
 
 ## License
