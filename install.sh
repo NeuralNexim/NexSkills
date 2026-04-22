@@ -6,6 +6,8 @@ set -euo pipefail
 
 REPO_RAW="https://raw.githubusercontent.com/NeuralNexim/NexSkills/main"
 DEFAULT_TARGET=".claude/commands"
+PROMPTS_DIR=".claude/prompts"
+SYMBOLIC_LINKS=true
 
 ALL_SKILLS=(
     "implement-next"
@@ -108,6 +110,7 @@ done
 info "Installing ${#SELECTED_SKILLS[@]} skill(s) → $TARGET"
 
 mkdir -p "$TARGET"
+mkdir -p "$PROMPTS_DIR"
 
 ok=0
 skip=0
@@ -116,6 +119,7 @@ fail=0
 for skill in "${SELECTED_SKILLS[@]}"; do
     dest="$TARGET/$skill.md"
     url="$REPO_RAW/skills/$skill.md"
+    symlink_dest="$PROMPTS_DIR/$skill.lnk"
 
     if [[ -f "$dest" ]] && ! $FORCE; then
         warn "Skipping $skill.md (already exists — use --force to overwrite)"
@@ -125,6 +129,9 @@ for skill in "${SELECTED_SKILLS[@]}"; do
 
     if command -v curl &>/dev/null; then
         if curl -fsSL "$url" -o "$dest"; then
+            if $SYMBOLIC_LINKS; then
+                ln -sf "../$dest" "$symlink_dest"
+            fi
             success "Installed $skill.md"
             (( ok++ )) || true
         else
@@ -133,6 +140,9 @@ for skill in "${SELECTED_SKILLS[@]}"; do
         fi
     elif command -v wget &>/dev/null; then
         if wget -qO "$dest" "$url"; then
+            if $SYMBOLIC_LINKS; then
+                ln -sf "../$dest" "$symlink_dest"
+            fi
             success "Installed $skill.md"
             (( ok++ )) || true
         else
