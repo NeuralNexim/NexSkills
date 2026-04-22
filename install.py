@@ -7,12 +7,28 @@
 #   --force           Overwrite existing skill files
 import argparse
 import os
+import re
 import sys
 import textwrap
 import urllib.error
 import urllib.request
 
 REPO_RAW = "https://raw.githubusercontent.com/NeuralNexim/NexSkills/main"
+
+# Marker written into every generated file so conflicts can be detected
+NEXSKILLS_MARKER = "<!-- nexskills:managed -->"
+
+# .gitignore section delimiters
+_GI_START = "# >>> NexSkills managed — do not edit between these markers"
+_GI_END   = "# <<< NexSkills"
+_GI_PATHS = [
+    ".nexskills/",
+    ".claude/commands/",
+    ".claude/prompts/",
+    ".github/copilot-instructions/",
+    ".copilot/",
+    ".gemini/",
+]
 
 ALL_SKILLS = [
     "implement-next",
@@ -68,6 +84,57 @@ def _fetch(url, dest):
     urllib.request.urlretrieve(url, dest)
 
 
+def _is_nexskills_file(path):
+    """Return True if path exists and was written by NexSkills."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            return NEXSKILLS_MARKER in fh.read(1024)
+    except OSError:
+        return False
+
+
+def _conflict_paths(skill):
+    """Return all file paths the installer would write for this skill."""
+    return [
+        os.path.join(NEXSKILLS_DIR,   f"{skill}.md"),
+        os.path.join(CLAUDE_DIR,      f"{skill}.md"),
+        os.path.join(COPILOT_CLI_DIR, f"{skill}.md"),
+        os.path.join(GEMINI_DIR,      f"{skill}.md"),
+        os.path.join(GEMINI_CLI_DIR,  f"{skill}.md"),
+        os.path.join(COPILOT_DIR,     skill, "SKILL.md"),
+    ]
+
+
+def _update_gitignore(add):
+    """Add or remove the NexSkills block in .gitignore."""
+    gitignore = ".gitignore"
+    existing = ""
+    if os.path.exists(gitignore):
+        with open(gitignore, "r", encoding="utf-8") as fh:
+            existing = fh.read()
+    cleaned = re.sub(
+        r"\n?# >>> NexSkills managed.*?# <<< NexSkills\n?",
+        "",
+        existing,
+        flags=re.DOTALL,
+    ).rstrip("\n")
+    if add:
+        section = "\n\n" + _GI_START + "\n" + "\n".join(_GI_PATHS) + "\n" + _GI_END
+        new_content = cleaned + section + "\n"
+    else:
+        new_content = cleaned + "\n" if cleaned else ""
+    with open(gitignore, "w", encoding="utf-8") as fh:
+        fh.write(new_content)
+
+
+def _any_nexskills_installed():
+    """Return True if at least one skill remains installed in .nexskills/."""
+    return any(
+        os.path.isfile(os.path.join(NEXSKILLS_DIR, f"{s}.md"))
+        for s in ALL_SKILLS
+    )
+
+
 def _write_copilot_wrapper(skill, procedure_path, skill_dir):
     """Write a VS Code Copilot SKILL.md wrapper that delegates to the procedure file."""
     os.makedirs(skill_dir, exist_ok=True)
@@ -80,6 +147,8 @@ def _write_copilot_wrapper(skill, procedure_path, skill_dir):
         description: "{description}"
         argument-hint: "{hint}"
         ---
+
+        {NEXSKILLS_MARKER}
 
         # {title}
 
@@ -96,6 +165,8 @@ def _write_generic_wrapper(skill, nexskills_path, dest):
     """Write a thin loader file that instructs the tool to load the NexSkills procedure."""
     title = skill.replace("-", " ").capitalize()
     content = textwrap.dedent(f"""\
+        {NEXSKILLS_MARKER}
+
         # {title}
 
         Load and follow the complete procedure from `{nexskills_path}`.
@@ -125,8 +196,21 @@ def install(selected, force):
         nexskills_dest = os.path.join(NEXSKILLS_DIR, f"{skill}.md")
         skill_url      = f"{REPO_RAW}/skills/{skill}.md"
 
+        # ── Conflict check: skip if any target is an existing non-NexSkills file ──
+        conflicts = [
+            p for p in _conflict_paths(skill)
+            if os.path.isfile(p) and not _is_nexskills_file(p)
+        ]
+        if conflicts:
+            print(f"Conflict: {skill} — existing user files found, skipping:")
+            for c in conflicts:
+                print(f"  {c}")
+            print(f"  Rename or move those files first.")
+            skip += 1
+            continue
+
         # ── 1. Download canonical copy into .nexskills/ ────────────────────────
-        if os.path.exists(nexskills_dest) and not force:
+        if os.path.isfile(nexskills_dest) and _is_nexskills_file(nexskills_dest) and not force:
             print(f"Skipping {skill} (already installed — use --force to overwrite)")
             skip += 1
             continue
@@ -139,11 +223,10 @@ def install(selected, force):
             continue
 
         # ── 2. Claude CLI: hard copy in .claude/commands/ ─────────────────────
+        import shutil
         claude_dest = os.path.join(CLAUDE_DIR, f"{skill}.md")
+        shutil.copy2(nexskills_dest, claude_dest)
         try:
-            import shutil
-            shutil.copy2(nexskills_dest, claude_dest)
-            # Attempt symlink in .claude/prompts/
             prompt_link = os.path.join(CLAUDE_PROMPTS, f"{skill}.lnk")
             if os.path.lexists(prompt_link):
                 os.remove(prompt_link)
@@ -167,6 +250,7 @@ def install(selected, force):
         print(f"Installed {skill}")
         ok += 1
 
+    _update_gitignore(add=True)
     print(f"\nDone: {ok} installed, {skip} skipped, {fail} failed.")
 
 
@@ -191,6 +275,8 @@ def uninstall(selected):
             removed_count += 1
         else:
             print(f"Nothing to remove for {skill} (not installed)")
+    if not _any_nexskills_installed():
+        _update_gitignore(add=False)
     print(f"\nDone. Removed: {removed_count} skill(s).")
 
 

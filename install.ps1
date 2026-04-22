@@ -23,7 +23,20 @@ $ErrorActionPreference = 'Stop'
 
 $REPO_RAW = 'https://raw.githubusercontent.com/NeuralNexim/NexSkills/main'
 
-# Install directories
+# Marker written into every generated file so conflicts can be detected
+$NEXSKILLS_MARKER = '<!-- nexskills:managed -->'
+
+# .gitignore section delimiters
+$GI_START = '# >>> NexSkills managed — do not edit between these markers'
+$GI_END   = '# <<< NexSkills'
+$GI_PATHS = @(
+    '.nexskills/'
+    '.claude/commands/'
+    '.claude/prompts/'
+    '.github/copilot-instructions/'
+    '.copilot/'
+    '.gemini/'
+)
 $NEXSKILLS_DIR   = '.nexskills'
 $CLAUDE_DIR      = '.claude\commands'
 $CLAUDE_PROMPTS  = '.claude\prompts'
@@ -111,6 +124,8 @@ description: "$description"
 argument-hint: "$hint"
 ---
 
+$NEXSKILLS_MARKER
+
 # $title
 
 Read the complete procedure from ``$nexskillsPath`` using the ``read_file`` tool,
@@ -124,6 +139,8 @@ then follow every step in that file precisely and in order.
 function Write-GenericWrapper($skill, $nexskillsPath, $dest) {
     $title = (Get-Culture).TextInfo.ToTitleCase($skill.Replace('-', ' '))
     $content = @"
+$NEXSKILLS_MARKER
+
 # $title
 
 Load and follow the complete procedure from ``$nexskillsPath``.
@@ -131,6 +148,47 @@ Read that file with your file-reading tool and execute every step
 precisely and in order. Do not paraphrase, skip, or reorder any steps.
 "@
     Set-Content -Path $dest -Value $content -Encoding UTF8
+}
+
+function Test-NexSkillsFile($path) {
+    if (-not (Test-Path $path -PathType Leaf)) { return $false }
+    try {
+        $content = Get-Content $path -Raw -Encoding UTF8 -ErrorAction Stop
+        return $content -like "*$NEXSKILLS_MARKER*"
+    } catch { return $false }
+}
+
+function Get-ConflictPaths($skill) {
+    return @(
+        (Join-Path $NEXSKILLS_DIR   "$skill.md"),
+        (Join-Path $CLAUDE_DIR      "$skill.md"),
+        (Join-Path $COPILOT_CLI_DIR "$skill.md"),
+        (Join-Path $GEMINI_DIR      "$skill.md"),
+        (Join-Path $GEMINI_CLI_DIR  "$skill.md"),
+        (Join-Path $COPILOT_DIR (Join-Path $skill 'SKILL.md'))
+    )
+}
+
+function Test-AnyNexSkillsInstalled {
+    foreach ($s in $ALL_SKILLS) {
+        if (Test-Path (Join-Path $NEXSKILLS_DIR "$s.md") -PathType Leaf) { return $true }
+    }
+    return $false
+}
+
+function Update-Gitignore([bool]$add) {
+    $gitignore = '.gitignore'
+    $existing  = if (Test-Path $gitignore) { Get-Content $gitignore -Raw -Encoding UTF8 } else { '' }
+    # Remove any existing NexSkills block
+    $cleaned = $existing -replace '(?s)\r?\n?# >>> NexSkills managed.*?# <<< NexSkills\r?\n?', ''
+    $cleaned = $cleaned.TrimEnd("`r","`n")
+    if ($add) {
+        $section = "`n`n$GI_START`n" + ($GI_PATHS -join "`n") + "`n$GI_END"
+        [System.IO.File]::WriteAllText((Resolve-Path '.').Path + "\$gitignore", ($cleaned + $section + "`n"), [System.Text.Encoding]::UTF8)
+    } else {
+        $out = if ($cleaned) { $cleaned + "`n" } else { '' }
+        [System.IO.File]::WriteAllText((Resolve-Path '.').Path + "\$gitignore", $out, [System.Text.Encoding]::UTF8)
+    }
 }
 
 function Remove-IfExists($path) {
@@ -182,6 +240,7 @@ if ($Uninstall) {
             Write-Warn "Nothing to remove for $skill (not installed)"
         }
     }
+    if (-not (Test-AnyNexSkillsInstalled)) { Update-Gitignore $false }
     Write-Host ''
     Write-Info "Done. Removed: $removedCount skill(s)."
     exit 0
@@ -201,8 +260,20 @@ foreach ($skill in $selected) {
     $nexskillsDest = Join-Path $NEXSKILLS_DIR "$skill.md"
     $url           = "$REPO_RAW/skills/$skill.md"
 
-    # ── 1. Download canonical copy into .nexskills/ ────────────────────────────
-    if ((Test-Path $nexskillsDest) -and (-not $Force)) {
+    # ── Conflict check: skip if any target is an existing non-NexSkills file ─────────
+    $conflicts = Get-ConflictPaths $skill | Where-Object {
+        (Test-Path $_ -PathType Leaf) -and (-not (Test-NexSkillsFile $_))
+    }
+    if ($conflicts) {
+        Write-Warn "Conflict: $skill — existing user files found, skipping:"
+        $conflicts | ForEach-Object { Write-Host "  $_" }
+        Write-Host '  Rename or move those files first.'
+        $skip++
+        continue
+    }
+
+    # ── 1. Download canonical copy into .nexskills/ ──────────────────────────────
+    if ((Test-Path $nexskillsDest) -and (Test-NexSkillsFile $nexskillsDest) -and (-not $Force)) {
         Write-Warn "Skipping $skill (already installed — use -Force to overwrite)"
         $skip++
         continue
@@ -243,6 +314,8 @@ foreach ($skill in $selected) {
     Write-Success "Installed $skill"
     $ok++
 }
+
+Update-Gitignore $true
 
 # ── summary ────────────────────────────────────────────────────────────────────
 
