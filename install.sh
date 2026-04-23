@@ -166,12 +166,8 @@ is_nexskills_file() {
 
 conflict_paths() {
     local skill="$1"
+    # Only .nexskills/ can conflict; all loader files use nexskills- prefix
     echo "$NEXSKILLS_DIR/$skill.md"
-    echo "$CLAUDE_DIR/$skill.md"
-    echo "$COPILOT_CLI_DIR/$skill.md"
-    echo "$GEMINI_DIR/$skill.md"
-    echo "$GEMINI_CLI_DIR/$skill.md"
-    echo "$COPILOT_DIR/$skill/SKILL.md"
 }
 
 any_nexskills_installed() {
@@ -252,12 +248,12 @@ if $UNINSTALL; then
         removed=false
         paths=(
             "$NEXSKILLS_DIR/$skill.md"
-            "$CLAUDE_DIR/$skill.md"
-            "$CLAUDE_PROMPTS/$skill.lnk"
-            "$COPILOT_DIR/$skill"
-            "$COPILOT_CLI_DIR/$skill.md"
-            "$GEMINI_DIR/$skill.md"
-            "$GEMINI_CLI_DIR/$skill.md"
+            "$CLAUDE_DIR/nexskills-$skill.md"
+            "$CLAUDE_PROMPTS/nexskills-$skill.lnk"
+            "$COPILOT_DIR/nexskills-$skill"
+            "$COPILOT_CLI_DIR/nexskills-$skill.md"
+            "$GEMINI_DIR/nexskills-$skill.md"
+            "$GEMINI_CLI_DIR/nexskills-$skill.md"
         )
         for p in "${paths[@]}"; do
             if [[ -f "$p" || -L "$p" ]]; then rm -f "$p" && removed=true
@@ -290,17 +286,11 @@ for skill in "${SELECTED_SKILLS[@]}"; do
     nexskills_dest="$NEXSKILLS_DIR/$skill.md"
     url="$REPO_RAW/skills/$skill.md"
 
-    # ── Conflict check: skip if any target is an existing non-NexSkills file ─────
-    conflict_found=false
-    while IFS= read -r p; do
-        if [[ -f "$p" ]] && ! is_nexskills_file "$p"; then
-            [[ "$conflict_found" == false ]] && warn "Conflict: $skill — existing user files found, skipping:"
-            warn "  $p"
-            conflict_found=true
-        fi
-    done < <(conflict_paths "$skill")
-    if [[ "$conflict_found" == true ]]; then
-        warn "  Rename or move those files first."
+    # ── Conflict check: only .nexskills/ can conflict (prefixed loader files
+    # use nexskills- prefix so they will never clash with user files) ──────────
+    if [[ -f "$nexskills_dest" ]] && ! is_nexskills_file "$nexskills_dest" && ! $FORCE; then
+        warn "Conflict: $nexskills_dest exists and is not a NexSkills file."
+        warn "  Move or remove it, or use --force to overwrite."
         (( skip++ )) || true
         continue
     fi
@@ -327,21 +317,21 @@ for skill in "${SELECTED_SKILLS[@]}"; do
         continue
     fi
 
-    # ── 2. Claude CLI ─────────────────────────────────────────────────────────
-    cp "$nexskills_dest" "$CLAUDE_DIR/$skill.md"
-    ln -sf "../../$nexskills_dest" "$CLAUDE_PROMPTS/$skill.lnk" 2>/dev/null || true
+    # ── 2. Claude CLI loader (nexskills-<skill>.md) ─────────────────────────
+    write_generic_wrapper "$skill" "$nexskills_dest" "$CLAUDE_DIR/nexskills-$skill.md"
+    ln -sf "../../$nexskills_dest" "$CLAUDE_PROMPTS/nexskills-$skill.lnk" 2>/dev/null || true
 
-    # ── 3. VS Code Copilot SKILL.md wrapper ───────────────────────────────────
-    write_copilot_wrapper "$skill" "$nexskills_dest" "$COPILOT_DIR/$skill"
+    # ── 3. VS Code Copilot SKILL.md wrapper ────────────────────────────────
+    write_copilot_wrapper "$skill" "$nexskills_dest" "$COPILOT_DIR/nexskills-$skill"
 
-    # ── 4. Copilot CLI loader ─────────────────────────────────────────────────
-    write_generic_wrapper "$skill" "$nexskills_dest" "$COPILOT_CLI_DIR/$skill.md"
+    # ── 4. Copilot CLI loader ───────────────────────────────────────────────
+    write_generic_wrapper "$skill" "$nexskills_dest" "$COPILOT_CLI_DIR/nexskills-$skill.md"
 
-    # ── 5. Gemini (VS Code) loader ────────────────────────────────────────────
-    write_generic_wrapper "$skill" "$nexskills_dest" "$GEMINI_DIR/$skill.md"
+    # ── 5. Gemini (VS Code) loader ──────────────────────────────────────────
+    write_generic_wrapper "$skill" "$nexskills_dest" "$GEMINI_DIR/nexskills-$skill.md"
 
-    # ── 6. Gemini CLI loader ──────────────────────────────────────────────────
-    write_generic_wrapper "$skill" "$nexskills_dest" "$GEMINI_CLI_DIR/$skill.md"
+    # ── 6. Gemini CLI loader ────────────────────────────────────────────────
+    write_generic_wrapper "$skill" "$nexskills_dest" "$GEMINI_CLI_DIR/nexskills-$skill.md"
 
     success "Installed $skill"
     (( ok++ )) || true

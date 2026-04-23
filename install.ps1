@@ -159,13 +159,9 @@ function Test-NexSkillsFile($path) {
 }
 
 function Get-ConflictPaths($skill) {
+    # Only .nexskills/ can conflict; all loader files use nexskills- prefix
     return @(
-        (Join-Path $NEXSKILLS_DIR   "$skill.md"),
-        (Join-Path $CLAUDE_DIR      "$skill.md"),
-        (Join-Path $COPILOT_CLI_DIR "$skill.md"),
-        (Join-Path $GEMINI_DIR      "$skill.md"),
-        (Join-Path $GEMINI_CLI_DIR  "$skill.md"),
-        (Join-Path $COPILOT_DIR (Join-Path $skill 'SKILL.md'))
+        (Join-Path $NEXSKILLS_DIR   "$skill.md")
     )
 }
 
@@ -222,12 +218,12 @@ if ($Uninstall) {
     foreach ($skill in $selected) {
         $paths = @(
             (Join-Path $NEXSKILLS_DIR   "$skill.md"),
-            (Join-Path $CLAUDE_DIR      "$skill.md"),
-            (Join-Path $CLAUDE_PROMPTS  "$skill.lnk"),
-            (Join-Path $COPILOT_DIR     $skill),
-            (Join-Path $COPILOT_CLI_DIR "$skill.md"),
-            (Join-Path $GEMINI_DIR      "$skill.md"),
-            (Join-Path $GEMINI_CLI_DIR  "$skill.md")
+            (Join-Path $CLAUDE_DIR      "nexskills-$skill.md"),
+            (Join-Path $CLAUDE_PROMPTS  "nexskills-$skill.lnk"),
+            (Join-Path $COPILOT_DIR     "nexskills-$skill"),
+            (Join-Path $COPILOT_CLI_DIR "nexskills-$skill.md"),
+            (Join-Path $GEMINI_DIR      "nexskills-$skill.md"),
+            (Join-Path $GEMINI_CLI_DIR  "nexskills-$skill.md")
         )
         $removed = $false
         foreach ($p in $paths) {
@@ -260,14 +256,14 @@ foreach ($skill in $selected) {
     $nexskillsDest = Join-Path $NEXSKILLS_DIR "$skill.md"
     $url           = "$REPO_RAW/skills/$skill.md"
 
-    # ── Conflict check: skip if any target is an existing non-NexSkills file ─────────
+    # ── Conflict check: only .nexskills/ can conflict (prefixed loader files
+    # use nexskills- prefix so they will never clash with user files) ──────────
     $conflicts = Get-ConflictPaths $skill | Where-Object {
         (Test-Path $_ -PathType Leaf) -and (-not (Test-NexSkillsFile $_))
     }
     if ($conflicts) {
-        Write-Warn "Conflict: $skill — existing user files found, skipping:"
-        $conflicts | ForEach-Object { Write-Host "  $_" }
-        Write-Host '  Rename or move those files first.'
+        Write-Warn "Conflict: $nexskillsDest exists and is not a NexSkills file."
+        Write-Host '  Move or remove it, or use -Force to overwrite.'
         $skip++
         continue
     }
@@ -287,11 +283,11 @@ foreach ($skill in $selected) {
         continue
     }
 
-    # ── 2. Claude CLI ─────────────────────────────────────────────────────────
-    $claudeDest = Join-Path $CLAUDE_DIR "$skill.md"
-    Copy-Item $nexskillsDest $claudeDest -Force
+    # ── 2. Claude CLI loader (nexskills-<skill>.md) ──────────────────────────
+    $claudeDest = Join-Path $CLAUDE_DIR "nexskills-$skill.md"
+    Write-GenericWrapper $skill $nexskillsDest $claudeDest
     try {
-        $promptLink = Join-Path $CLAUDE_PROMPTS "$skill.lnk"
+        $promptLink = Join-Path $CLAUDE_PROMPTS "nexskills-$skill.lnk"
         if (Test-Path $promptLink) { Remove-Item $promptLink -Force }
         $rel = [System.IO.Path]::GetRelativePath($CLAUDE_PROMPTS, $claudeDest)
         New-Item -ItemType SymbolicLink -Path $promptLink -Target $rel | Out-Null
@@ -300,16 +296,16 @@ foreach ($skill in $selected) {
     }
 
     # ── 3. VS Code Copilot SKILL.md wrapper ───────────────────────────────────
-    Write-CopilotWrapper $skill $nexskillsDest (Join-Path $COPILOT_DIR $skill)
+    Write-CopilotWrapper $skill $nexskillsDest (Join-Path $COPILOT_DIR "nexskills-$skill")
 
     # ── 4. Copilot CLI loader ─────────────────────────────────────────────────
-    Write-GenericWrapper $skill $nexskillsDest (Join-Path $COPILOT_CLI_DIR "$skill.md")
+    Write-GenericWrapper $skill $nexskillsDest (Join-Path $COPILOT_CLI_DIR "nexskills-$skill.md")
 
     # ── 5. Gemini (VS Code) loader ────────────────────────────────────────────
-    Write-GenericWrapper $skill $nexskillsDest (Join-Path $GEMINI_DIR "$skill.md")
+    Write-GenericWrapper $skill $nexskillsDest (Join-Path $GEMINI_DIR "nexskills-$skill.md")
 
     # ── 6. Gemini CLI loader ──────────────────────────────────────────────────
-    Write-GenericWrapper $skill $nexskillsDest (Join-Path $GEMINI_CLI_DIR "$skill.md")
+    Write-GenericWrapper $skill $nexskillsDest (Join-Path $GEMINI_CLI_DIR "nexskills-$skill.md")
 
     Write-Success "Installed $skill"
     $ok++
