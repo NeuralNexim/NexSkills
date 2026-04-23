@@ -94,14 +94,15 @@ def _is_nexskills_file(path):
 
 
 def _conflict_paths(skill):
-    """Return all file paths the installer would write for this skill."""
+    """Return all file paths the installer would write for this skill.
+    All use the nexskills- prefix so they never conflict with user files."""
     return [
         os.path.join(NEXSKILLS_DIR,   f"{skill}.md"),
-        os.path.join(CLAUDE_DIR,      f"{skill}.md"),
-        os.path.join(COPILOT_CLI_DIR, f"{skill}.md"),
-        os.path.join(GEMINI_DIR,      f"{skill}.md"),
-        os.path.join(GEMINI_CLI_DIR,  f"{skill}.md"),
-        os.path.join(COPILOT_DIR,     skill, "SKILL.md"),
+        os.path.join(CLAUDE_DIR,      f"nexskills-{skill}.md"),
+        os.path.join(COPILOT_CLI_DIR, f"nexskills-{skill}.md"),
+        os.path.join(GEMINI_DIR,      f"nexskills-{skill}.md"),
+        os.path.join(GEMINI_CLI_DIR,  f"nexskills-{skill}.md"),
+        os.path.join(COPILOT_DIR,     f"nexskills-{skill}", "SKILL.md"),
     ]
 
 
@@ -196,16 +197,11 @@ def install(selected, force):
         nexskills_dest = os.path.join(NEXSKILLS_DIR, f"{skill}.md")
         skill_url      = f"{REPO_RAW}/skills/{skill}.md"
 
-        # ── Conflict check: skip if any target is an existing non-NexSkills file ──
-        conflicts = [
-            p for p in _conflict_paths(skill)
-            if os.path.isfile(p) and not _is_nexskills_file(p)
-        ]
-        if conflicts:
-            print(f"Conflict: {skill} — existing user files found, skipping:")
-            for c in conflicts:
-                print(f"  {c}")
-            print(f"  Rename or move those files first.")
+        # ── Conflict check: only .nexskills/ download can conflict (prefixed
+        # loader files use nexskills- prefix so they won't clash with user files)
+        if os.path.isfile(nexskills_dest) and not _is_nexskills_file(nexskills_dest) and not force:
+            print(f"Conflict: {nexskills_dest} exists and is not a NexSkills file.")
+            print(f"  Move or remove it, or use --force to overwrite.")
             skip += 1
             continue
 
@@ -222,12 +218,12 @@ def install(selected, force):
             fail += 1
             continue
 
-        # ── 2. Claude CLI: hard copy in .claude/commands/ ─────────────────────
+        # ── 2. Claude CLI loader (nexskills-<skill>.md) ───────────────────────
         import shutil
-        claude_dest = os.path.join(CLAUDE_DIR, f"{skill}.md")
-        shutil.copy2(nexskills_dest, claude_dest)
+        claude_dest = os.path.join(CLAUDE_DIR, f"nexskills-{skill}.md")
+        _write_generic_wrapper(skill, nexskills_dest, claude_dest)
         try:
-            prompt_link = os.path.join(CLAUDE_PROMPTS, f"{skill}.lnk")
+            prompt_link = os.path.join(CLAUDE_PROMPTS, f"nexskills-{skill}.lnk")
             if os.path.lexists(prompt_link):
                 os.remove(prompt_link)
             rel = os.path.relpath(claude_dest, CLAUDE_PROMPTS)
@@ -236,16 +232,16 @@ def install(selected, force):
             pass  # symlinks optional on Windows
 
         # ── 3. VS Code Copilot: SKILL.md wrapper ──────────────────────────────
-        _write_copilot_wrapper(skill, nexskills_dest, os.path.join(COPILOT_DIR, skill))
+        _write_copilot_wrapper(skill, nexskills_dest, os.path.join(COPILOT_DIR, f"nexskills-{skill}"))
 
         # ── 4. Copilot CLI loader ──────────────────────────────────────────────
-        _write_generic_wrapper(skill, nexskills_dest, os.path.join(COPILOT_CLI_DIR, f"{skill}.md"))
+        _write_generic_wrapper(skill, nexskills_dest, os.path.join(COPILOT_CLI_DIR, f"nexskills-{skill}.md"))
 
         # ── 5. Gemini (VS Code extension) loader ──────────────────────────────
-        _write_generic_wrapper(skill, nexskills_dest, os.path.join(GEMINI_DIR, f"{skill}.md"))
+        _write_generic_wrapper(skill, nexskills_dest, os.path.join(GEMINI_DIR, f"nexskills-{skill}.md"))
 
         # ── 6. Gemini CLI loader ───────────────────────────────────────────────
-        _write_generic_wrapper(skill, nexskills_dest, os.path.join(GEMINI_CLI_DIR, f"{skill}.md"))
+        _write_generic_wrapper(skill, nexskills_dest, os.path.join(GEMINI_CLI_DIR, f"nexskills-{skill}.md"))
 
         print(f"Installed {skill}")
         ok += 1
@@ -260,12 +256,12 @@ def uninstall(selected):
         removed = False
         paths = [
             os.path.join(NEXSKILLS_DIR,   f"{skill}.md"),
-            os.path.join(CLAUDE_DIR,      f"{skill}.md"),
-            os.path.join(CLAUDE_PROMPTS,  f"{skill}.lnk"),
-            os.path.join(COPILOT_DIR,     skill),          # directory
-            os.path.join(COPILOT_CLI_DIR, f"{skill}.md"),
-            os.path.join(GEMINI_DIR,      f"{skill}.md"),
-            os.path.join(GEMINI_CLI_DIR,  f"{skill}.md"),
+            os.path.join(CLAUDE_DIR,      f"nexskills-{skill}.md"),
+            os.path.join(CLAUDE_PROMPTS,  f"nexskills-{skill}.lnk"),
+            os.path.join(COPILOT_DIR,     f"nexskills-{skill}"),   # directory
+            os.path.join(COPILOT_CLI_DIR, f"nexskills-{skill}.md"),
+            os.path.join(GEMINI_DIR,      f"nexskills-{skill}.md"),
+            os.path.join(GEMINI_CLI_DIR,  f"nexskills-{skill}.md"),
         ]
         for p in paths:
             if _remove_if_exists(p):
