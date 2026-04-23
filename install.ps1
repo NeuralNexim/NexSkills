@@ -318,3 +318,16 @@ Update-Gitignore $true
 Write-Host ''
 Write-Info "Done. Installed: $ok  Skipped: $skip  Failed: $fail"
 
+if ($ok -gt 0) {
+    Write-Host ''
+    Write-Info "Installed skills can be invoked in your AI tool:"
+    Write-Host ''
+    Write-Host "  CLI:  Type /implement-next, /peer-review, /show-changes, etc." -ForegroundColor Cyan
+    Write-Host "  Code: Type the skill name or /skill-name in the Copilot chat panel." -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host "[NexSkills] " -NoNewline -ForegroundColor Yellow
+    Write-Host "VS Code users: " -NoNewline -ForegroundColor White
+    Write-Host "reload the window to activate new skills." -ForegroundColor White
+    Write-Host "             Ctrl+Shift+P -> `"Developer: Reload Window`" -> Enter" -ForegroundColor DarkGray
+}
+

@@ -248,6 +248,12 @@ def install(selected, force):
 
     _update_gitignore(add=True)
     print(f"\nDone: {ok} installed, {skip} skipped, {fail} failed.")
+    if ok > 0:
+        print("\nInstalled skills can be invoked in your AI tool:")
+        print("  CLI:  Type /implement-next, /peer-review, /show-changes, etc.")
+        print("  Code: Type the skill name or /skill-name in the Copilot chat panel.")
+        print("\n[NexSkills] VS Code users: reload the window to activate new skills.")
+        print('             Ctrl+Shift+P \u2192 \"Developer: Reload Window\" \u2192 Enter')
 
 
 def uninstall(selected):
