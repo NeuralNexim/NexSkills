@@ -349,4 +349,15 @@ if [[ $fail -gt 0 ]]; then
     exit 1
 fi
 
+if [[ $ok -gt 0 ]]; then
+    echo ""
+    info "Installed skills can be invoked in your AI tool:"
+    echo ""
+    printf '  \033[1;36m%-6s\033[0m  %s\n' "CLI:" "Type /implement-next, /peer-review, /show-changes, etc."
+    printf '  \033[1;36m%-6s\033[0m  %s\n' "Code:" "Type the skill name or /skill-name in the Copilot chat panel."
+    echo ""
+    printf '\033[1;33m[NexSkills]\033[0m \033[1mVS Code users:\033[0m reload the window to activate new skills.\n'
+    printf '             \033[2mCtrl+Shift+P → "Developer: Reload Window" → Enter\033[0m\n'
+fi
+
 
