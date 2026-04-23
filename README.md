@@ -1,105 +1,103 @@
 # NexSkills
 
-A collection of generic Copilot CLI skill files for software development
-workflows, installable into any project in seconds.
+A collection of generic AI skill files for software development workflows,
+installable into any project in seconds. Skills are installed for **Claude**,
+**VS Code Copilot**, **Copilot CLI**, **Gemini**, and **Gemini CLI**
+simultaneously.
 
 ## Installation
 
 ### Linux / macOS
 
 ```bash
-# Install all skills into .claude/commands/ in your project
+# Install all skills
 curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash
 ```
 
 Install specific skills only:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash -s -- \
-  --skills peer-review,implement-review
-```
-
-Install into a custom directory:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash -s -- \
-  --target ~/myproject/.claude/commands
-```
-
----
-
-### Windows (PowerShell)
-
-```powershell
-# Install all skills into .claude\commands\ in your project
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh" `
-  -OutFile "$env:TEMP\nexskills-install.sh"
-bash "$env:TEMP\nexskills-install.sh"
-```
-
-> **Requires** Git Bash, WSL, or any shell that provides `bash` and `curl`.
-> Git for Windows includes both — download from https://git-scm.com/download/win
-
-Install specific skills only (Git Bash / WSL):
-
-```bash
-bash "$TEMP/nexskills-install.sh" --skills peer-review,implement-review
-```
-
----
-
-### Windows (WSL)
-
-Open your WSL terminal and run the same command as Linux:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash
-```
-
-To install into a Windows-side project from WSL, use the mounted path:
-
-```bash
 curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | \
-  bash -s -- --target /mnt/c/Users/$USER/myproject/.claude/commands
+  bash -s -- --skills peer-review,implement-review
 ```
 
 ---
 
-### Manual install (any OS)
-
-If you cannot run shell scripts, download skill files directly and place them
-in your project's `.claude/commands/` directory:
-
-```
-https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/implement-next.md
-https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/peer-review.md
-https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/implement-review.md
-https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/plan-milestone.md
-https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills/show-changes.md
-```
-
-On Windows you can do this with PowerShell (no shell required):
+### Windows (PowerShell — native, no bash required)
 
 ```powershell
-$base = "https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/skills"
-$dest = ".claude\commands"
-New-Item -ItemType Directory -Force -Path $dest | Out-Null
-@("implement-next","peer-review","implement-review","plan-milestone","show-changes") | ForEach-Object {
-    Invoke-WebRequest "$base/$_.md" -OutFile "$dest\$_.md"
-    Write-Host "Installed $_"
-}
+irm https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.ps1 | iex
+```
+
+Install specific skills only:
+
+```powershell
+.\install.ps1 -Skills peer-review,implement-review
+```
+
+---
+
+### Python (any OS)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.py | python3 -
 ```
 
 ---
 
 ### Installer options
 
-| Flag | Description |
-|------|-------------|
-| `--target DIR` | Install into a custom directory (default: `.claude/commands`) |
-| `--skills NAMES` | Comma-separated list of skills to install (default: all) |
-| `--list` | Print available skills and exit |
-| `--force` | Overwrite existing skill files |
+| Flag (bash) | Flag (PowerShell) | Description |
+|---|---|---|
+| `--skills NAMES` | `-Skills NAMES` | Comma-separated list of skills (default: all) |
+| `--list` | `-List` | Print available skills and exit |
+| `--uninstall` | `-Uninstall` | Remove previously installed skill files |
+| `--force` | `-Force` | Overwrite existing skill files |
+
+---
+
+## Installed paths
+
+Each skill creates files in **all** of the following locations:
+
+| Path | Purpose |
+|---|---|
+| `.nexskills/<name>.md` | Canonical procedure (source of truth — all tools read this) |
+| `.claude/commands/<name>.md` | Claude CLI command |
+| `.claude/prompts/<name>.lnk` | Claude CLI prompt symlink |
+| `.github/copilot-instructions/<name>/SKILL.md` | VS Code Copilot skill wrapper |
+| `.copilot/skills/<name>.md` | Copilot CLI loader |
+| `.gemini/skills/<name>.md` | Gemini VS Code loader |
+| `.gemini/commands/<name>.md` | Gemini CLI loader |
+
+---
+
+## Uninstalling
+
+**Linux / macOS:**
+
+```bash
+bash install.sh --uninstall
+# or remove specific skills:
+bash install.sh --uninstall --skills peer-review
+```
+
+**Windows (PowerShell):**
+
+```powershell
+.\install.ps1 -Uninstall
+# or remove specific skills:
+.\install.ps1 -Uninstall -Skills peer-review
+```
+
+**Python:**
+
+```bash
+python3 install.py --uninstall
+python3 install.py --uninstall --skills peer-review
+```
+
+---
 
 ## Available skills
 
@@ -109,9 +107,9 @@ end-to-end: syncs with the integration branch, creates a feature branch,
 executes the plan, runs tests, and triggers a peer review.
 
 ### `/peer-review`
-Launches a `claude-opus-4.7` code-review agent against the current branch
-diff and writes a structured review report to `plan/reviews/`. Uses
-`plan/implementation-rules.md` for project-specific constraints.
+Launches a code-review agent against the current branch diff and writes a
+structured review report to `plan/reviews/`. Uses `plan/implementation-rules.md`
+for project-specific constraints.
 
 ### `/implement-review`
 Reads the current branch's review file, implements all BLOCKING fixes,
@@ -128,7 +126,31 @@ Scans the current branch diff for new and updated public-facing symbols
 (CLI commands, public functions, modules, API endpoints) and displays a
 formatted human-readable changelog.
 
+---
+
 ## How skills work
+
+Each skill is a Markdown file stored in `.nexskills/`. The installer writes
+thin loader/wrapper files for each AI tool so every tool reads the same
+canonical procedure. Wrappers never duplicate the procedure — they instruct the
+AI to load it at runtime via its file-reading tool.
+
+Skills are project-agnostic — they detect the project's language and conventions
+at runtime by reading `plan/implementation-rules.md` and the existing codebase.
+
+## Updating
+
+Re-run the installer with `--force` / `-Force` to pull the latest version of
+all skills.
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/NeuralNexim/NexSkills/main/install.sh | bash -s -- --force
+
+# Windows PowerShell
+.\install.ps1 -Force
+```
+
 
 Each skill is a Markdown file that contains a structured prompt template.
 The GitHub Copilot CLI reads `.claude/commands/*.md` and makes each file
