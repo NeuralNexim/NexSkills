@@ -4,6 +4,22 @@ NexSkills is a collection of generic Copilot CLI skill files for software
 development workflows.  Skills are plain Markdown files stored in `skills/`
 and installed into projects via `install.sh`.
 
+<!-- ai-dev-framework:begin v0.3.2 -->
+## Engineering standards (ai-dev-framework)
+
+Process standards live in `docs/STANDARDS.md` + `docs/AI_RULES.md` (read before touching code).
+
+- **Commits:** one line, milestone style (e.g. `installer: add uninstall support`), no trailers, no PII.
+- **Branches (trunk):** `feature/<name>` → `main`; PR base `main`; never direct-commit/push `main`.
+- **Gate before commit/push:** `shellcheck install.sh` (hooks) + CI `validate` (skill manifest checks).
+- **ADR** for installer-architecture / manifest-format / distribution decisions → `docs/adr/`
+  (guide: `docs/ADR_GUIDE.md`).
+- **Never merge without explicit human approval.** PR required + green `validate` (0 approvals, solo).
+- **Enforcement:** local hooks (`core.hooksPath=.githooks`) + GitHub ruleset
+  (`.github/rulesets/protect-default.json`) — the ruleset is the bypass-proof gate.
+<!-- ai-dev-framework:end -->
+
+
 ## Repository structure
 
 ```

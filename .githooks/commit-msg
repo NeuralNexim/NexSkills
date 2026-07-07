@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+# ai-dev-framework managed (v0.3.2) — commit-msg gate for NexSkills.
+# Style: milestone → one-line summary (no ticket required).
+# Enforces one-line subject, no trailers, no PII. Bypassable with --no-verify (local gate).
+# The GitHub ruleset is the authoritative gate.
+
+msg_file="$1"
+subject="$(head -n1 "$msg_file")"
+
+# 1. Subject must be a non-empty one-liner (milestone style).
+if ! printf '%s' "$subject" | grep -Eq '^\S.+'; then
+  echo "[commit-msg] REJECTED — subject must be a one-line summary." >&2
+  echo "  example: installer: add uninstall support" >&2
+  echo "  got:     $subject" >&2
+  exit 1
+fi
+
+# 2. One line only — no body / no trailers (ignore comment + blank lines git appends).
+body="$(grep -vE '^\s*#' "$msg_file" | sed '1d' | grep -vE '^\s*$' || true)"
+if [ -n "$body" ]; then
+  echo "[commit-msg] REJECTED — commit message must be one line (no body, no trailers)." >&2
+  exit 1
+fi
+
+# 3. No PII / attribution trailers anywhere.
+if grep -Eiq 'co-authored-by|signed-off-by|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}' "$msg_file"; then
+  echo "[commit-msg] REJECTED — no email / Co-authored-by / Signed-off-by / PII allowed." >&2
+  exit 1
+fi
+
+exit 0

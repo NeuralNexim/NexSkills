@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+# ai-dev-framework managed (v0.3.2) — pre-commit gate for NexSkills.
+# Blocks direct commits to protected branches + shellchecks install.sh. Bypassable with --no-verify.
+set -e
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+for protected in main; do
+  if [ "$branch" = "$protected" ]; then
+    echo "[pre-commit] REFUSED — direct commit to protected branch '$branch'." >&2
+    echo "  Branch first: git checkout -b feature/<name>" >&2
+    exit 1
+  fi
+done
+
+if command -v shellcheck >/dev/null 2>&1; then
+  echo "[pre-commit] shellcheck install.sh..."
+  shellcheck install.sh || { echo "[pre-commit] shellcheck FAILED — fix before committing." >&2; exit 1; }
+  echo "[pre-commit] OK."
+else
+  echo "[pre-commit] WARNING: shellcheck not installed — skipping (CI 'validate' still enforces it)." >&2
+fi
