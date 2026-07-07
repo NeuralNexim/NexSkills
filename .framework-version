@@ -1,4 +1,4 @@
-framework_version: 0.3.2
+framework_version: 0.3.5    # 0.3.2 install; 0.3.5 added issue templates + header standard
 installed_utc: 2026-07-07
 source_repo: NeuralNexim/ai-dev-framework
 resolved:

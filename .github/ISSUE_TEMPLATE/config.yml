@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Engineering Standards
+    url: https://github.com/NeuralNexim/NexSkills/blob/main/docs/STANDARDS.md
+    about: "Commit / branch / PR / issue / ADR standards — read before filing."
+  - name: AI Agent Rules
+    url: https://github.com/NeuralNexim/NexSkills/blob/main/docs/AI_RULES.md
+    about: "Behavioural contract for AI agents working in this repo."

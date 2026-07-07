@@ -30,6 +30,24 @@ feature/<name>  →  main
 - **0** required approvals (solo repo) — but a **PR is still required** and CI must be green.
   **Never merge without explicit human approval.**
 
+## 2a. Issue standards
+
+Every issue is labelled at creation and opens with a **header block** at the top of the body
+(the `.github/ISSUE_TEMPLATE/` scaffolds this):
+
+```
+Model: <Haiku | Sonnet | Opus | None>     ← Claude model to implement (routing hint); None = no AI impl
+**Priority**: <P0 | P1 | P2 | P3>
+**Effort**: <S | M | L | XL>
+**ADR required**: <no | yes → docs/adr/NNNN-slug.md>   ← yes for installer/manifest/distribution decisions
+**Related**: <#refs>
+```
+
+Body sections, in order: `### Problem` → `### Proposed design` (installer/manifest issues) →
+`### Work` → `### Acceptance Criteria` (checkboxes; include "`validate` CI green") →
+`### Blast radius` (refactors) → `### Related`. When **enhancing a bare issue**, add the header
++ reshape into these sections — infer `Model`/`Effort`/`Priority`/`ADR required`, don't leave blank.
+
 ## 3. Code quality
 
 - Skills in `skills/` stay **self-contained and project-agnostic** — no hard-coded project
