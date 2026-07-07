@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+# ai-dev-framework managed (v0.3.2) — pre-push gate for NexSkills.
+# Blocks direct pushes to protected branches, validates branch name, shellchecks install.sh.
+# Bypassable with --no-verify — the GitHub ruleset is the authoritative gate.
+set -e
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+
+# 1. Never push straight to a protected branch from the CLI.
+for protected in main; do
+  if [ "$branch" = "$protected" ]; then
+    echo "[pre-push] REFUSED — direct push to protected branch '$branch'. Open a PR." >&2
+    exit 1
+  fi
+done
+
+# 2. Feature branches must match the naming convention.
+if ! printf '%s' "$branch" | grep -Eq '^feature/.+'; then
+  echo "[pre-push] REFUSED — branch '$branch' must match ^feature/.+" >&2
+  exit 1
+fi
+
+if command -v shellcheck >/dev/null 2>&1; then
+  echo "[pre-push] shellcheck install.sh..."
+  shellcheck install.sh || { echo "[pre-push] shellcheck FAILED — fix before pushing." >&2; exit 1; }
+  echo "[pre-push] OK."
+else
+  echo "[pre-push] WARNING: shellcheck not installed — skipping (CI 'validate' still enforces it)." >&2
+fi

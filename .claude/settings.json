@@ -1,0 +1,14 @@
+{
+  "//": "ai-dev-framework managed defaults for NexSkills.",
+  "permissions": {
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(*--no-verify*)"
+    ],
+    "ask": [
+      "Bash(gh pr merge*)",
+      "Bash(git push*)"
+    ]
+  }
+}

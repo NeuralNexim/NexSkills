@@ -1,0 +1,24 @@
+framework_version: 0.3.2
+installed_utc: 2026-07-07
+source_repo: NeuralNexim/ai-dev-framework
+resolved:
+  PROJECT_NAME: NexSkills
+  PROJECT_TAGLINE: A collection of generic Copilot CLI skill files for software-development workflows.
+  DEFAULT_BRANCH: main
+  RELEASE_BRANCH: main
+  COMMIT_STYLE: milestone
+  BRANCHING_MODEL: trunk
+  BRANCH_PREFIX: feature
+  PROTECTED_BRANCHES: [main]
+  BRANCH_NAME_REGEX: '^feature/.+'
+  STACK: other
+  STACK_COMMANDS_SOURCE: custom
+  LINT_CMD: shellcheck install.sh
+  REVIEWER_MIN: 0            # solo repo (single collaborator) — avoids the approval deadlock
+  REQUIRED_CHECKS: [validate]
+  BOARD_ENABLED: false
+skipped:
+  - .github/workflows/*   # repo already has ci.yml (validate: shellcheck + skill manifest checks)
+  - .github/rulesets/protect-release.json   # trunk model — single branch
+notes:
+  - Retired the misspelled 'developement' integration branch (was fully merged into main).
