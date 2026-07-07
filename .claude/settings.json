@@ -1,14 +1,29 @@
 {
-  "//": "ai-dev-framework managed defaults for NexSkills.",
+  "//": "ai-dev-framework managed for NexSkills. MERGE (deny wins over any existing allow). Claude Code ENFORCES these for its Read/Edit tools + RECOGNIZED Bash reads (cat/head/grep/sed) — a Python/Node subprocess opening a file directly BYPASSES the Read denies (needs OS sandboxing for airtight). Bash arg-matching is prefix+wildcard and fragile — the gh-api ask is broad on purpose. For airtight control, pair with sandboxing + a PreToolUse hook (see SECURITY.md).",
   "permissions": {
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push -f*)",
-      "Bash(*--no-verify*)"
+      "Bash(*--no-verify*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/*.p12)",
+      "Read(**/*.pfx)",
+      "Read(**/*.keystore)",
+      "Read(**/id_rsa*)",
+      "Read(**/*secret*)",
+      "Read(**/*credential*)",
+      "Read(**/.npmrc)",
+      "Read(**/.pypirc)"
     ],
     "ask": [
       "Bash(gh pr merge*)",
-      "Bash(git push*)"
+      "Bash(git push*)",
+      "Bash(gh api *)"
     ]
   }
 }
