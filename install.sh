@@ -304,9 +304,9 @@ for skill in "${SELECTED_SKILLS[@]}"; do
 
     downloaded=false
     if command -v curl &>/dev/null; then
-        curl -fsSL "$url" -o "$nexskills_dest" && downloaded=true || true
+        if curl -fsSL "$url" -o "$nexskills_dest"; then downloaded=true; fi
     elif command -v wget &>/dev/null; then
-        wget -qO "$nexskills_dest" "$url" && downloaded=true || true
+        if wget -qO "$nexskills_dest" "$url"; then downloaded=true; fi
     else
         error "Neither curl nor wget is available."
     fi
