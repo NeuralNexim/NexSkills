@@ -1,5 +1,6 @@
-framework_version: 0.3.5    # 0.3.2 install; 0.3.5 added issue templates + header standard
+framework_version: 0.8.1
 installed_utc: 2026-07-07
+upgraded_utc: 2026-07-07
 source_repo: NeuralNexim/ai-dev-framework
 resolved:
   PROJECT_NAME: NexSkills
@@ -17,8 +18,47 @@ resolved:
   REVIEWER_MIN: 0            # solo repo (single collaborator) — avoids the approval deadlock
   REQUIRED_CHECKS: [validate]
   BOARD_ENABLED: false
+installed:
+  added_files:
+    - docs/REVIEW_WORKFLOW.md
+    - docs/REVIEWER_LOG.md
+    - docs/HANDOVER.md
+    - .claude/commands/framework-check.md
+    - .claude/commands/upgrade-framework.md
+    - .claude/commands/request-review.md
+    - .github/copilot-instructions.md
+  merged_files:
+    - CLAUDE.md                           # managed region only (v0.3.2 → v0.8.1)
+    - .claude/settings.json               # added Bash(gh api *) to ask list + secret denies
+    - .github/ISSUE_TEMPLATE/task.md      # added Reviewer Model: field + comment
 skipped:
-  - .github/workflows/*   # repo already has ci.yml (validate: shellcheck + skill manifest checks)
-  - .github/rulesets/protect-release.json   # trunk model — single branch
+  - .github/workflows/*                   # repo already has ci.yml (validate: shellcheck + skill manifest checks)
+  - .github/rulesets/protect-release.json # trunk model — single branch
+rulesets:
+  existing_untouched:
+    - name: protect-main
+      id: 18618082
+      branches: [refs/heads/main]
+checksums:
+  algorithm: sha256
+  files:
+    "CLAUDE.md (managed region)": a4679afbaee0df489e33de3958d8bf3183f132b348ebf7234ec124faaaa165c1
+    "docs/REVIEW_WORKFLOW.md": 4e54b49b02253816018f4ca8657baf0c2a73cc17ad5be62cca582ade7ea1219f
+    "docs/REVIEWER_LOG.md": 817140c0bbdb26bc77d3dc2f9d87b5cfae3ffeb3b0825d5baca50582a4fce854
+    "docs/HANDOVER.md": 702ad6e17a621630f3d25a5cee66fccfd3c1d9283770e9c41f2dfdc4298c6211
+    ".claude/commands/framework-check.md": 20d1dff1d5e07419a2419c39048e5c46769ee02587ba4aebce27c0e1fd3dd646
+    ".claude/commands/upgrade-framework.md": f0b2cb649342cf6cffff5298a7f0203f03032eef6ccc97008abf9e6d1464ab6a
+    ".claude/commands/request-review.md": e3dfe703d8ea4f86bb7ccbcdf90542e8990e9b274db69b39d72fa89d1d3cbc39
+    ".github/copilot-instructions.md": 6c34087d86ecf886a105af5729adc1fa0bdfc3cd2d3d5deb51b8b50e0f402661
+    ".claude/settings.json": 1b0b7fd2219ddf9b7cc28caeb115a945fb374daa3de425070951b5fa51086ac4
+    ".github/ISSUE_TEMPLATE/task.md": 91083a6c984b12e6a03a2088e5832e3692034435d0876f0ff24eec0fbf305da7
 notes:
+  - Upgraded from 0.3.5 to 0.8.1 (0.3.5 added issue templates + header standard)
   - Retired the misspelled 'developement' integration branch (was fully merged into main).
+  - Added REVIEW_WORKFLOW.md, REVIEWER_LOG.md, HANDOVER.md for structured review process
+  - Added .claude/commands for /framework-check, /upgrade-framework, /request-review
+  - Updated CLAUDE.md managed region with new section structure (Read first, Environment, Commit convention, Branch & PR, Local gates, ADR, Subagents)
+  - Merged .claude/settings.json with new secret-related denies and gh api ask
+  - Added Reviewer Model: field to issue task template
+  - Added .github/copilot-instructions.md with framework standards
+  - Rulesets: protect-main (id 18618082) already applied server-side, unchanged

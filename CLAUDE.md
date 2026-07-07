@@ -4,19 +4,58 @@ NexSkills is a collection of generic Copilot CLI skill files for software
 development workflows.  Skills are plain Markdown files stored in `skills/`
 and installed into projects via `install.sh`.
 
-<!-- ai-dev-framework:begin v0.3.2 -->
-## Engineering standards (ai-dev-framework)
+<!-- ai-dev-framework:begin v0.8.1 -->
 
-Process standards live in `docs/STANDARDS.md` + `docs/AI_RULES.md` (read before touching code).
+## 1. Read first
 
-- **Commits:** one line, milestone style (e.g. `installer: add uninstall support`), no trailers, no PII.
-- **Branches (trunk):** `feature/<name>` → `main`; PR base `main`; never direct-commit/push `main`.
-- **Gate before commit/push:** `shellcheck install.sh` (hooks) + CI `validate` (skill manifest checks).
-- **ADR** for installer-architecture / manifest-format / distribution decisions → `docs/adr/`
-  (guide: `docs/ADR_GUIDE.md`).
-- **Never merge without explicit human approval.** PR required + green `validate` (0 approvals, solo).
-- **Enforcement:** local hooks (`core.hooksPath=.githooks`) + GitHub ruleset
-  (`.github/rulesets/protect-default.json`) — the ruleset is the bypass-proof gate.
+Before touching code, load:
+- `docs/AI_RULES.md` — behavioural contract (no PII, no unauthorized merge, plan-first)
+- `docs/STANDARDS.md` — commit / branch / PR / issue / ADR / CI standards
+
+## 2. Environment
+
+- **Default branch (PR base):** `main`
+- **Release branch:** `main`
+- **Stack:** other · source in `skills/` · tests in `tests/`
+
+## 3. Commit convention (milestone)
+
+```
+one-line summary (project milestone/prefix style); no ticket required
+```
+
+Example: `M9: summit boss phase-2 attack pattern`. One line, no trailers, no PII.
+
+## 4. Branch & PR (trunk)
+
+- Feature branches: `feature/…`; always branch from `main`.
+- PR base is always `main`; body must contain `closes #N`.
+- Protected branches (never direct-push): main.
+- ≥ 0 approval. **Never merge without explicit human approval.**
+
+## 5. Local gates (all green before PR)
+
+```
+shellcheck install.sh
+true   # no typecheck for this stack
+true   # no test framework for this stack
+true   # no security gate for this stack
+```
+
+Diff coverage ≥ 90%.
+
+## 6. ADR
+
+Required for new modules/stages, schema changes, algorithm/data-policy/infra decisions.
+`docs/adr/ADR-NNNN-slug.md`; frozen on merge; guide in `docs/ADR_GUIDE.md`.
+
+## 7. Subagents
+
+| Task | Subagent |
+|------|----------|
+| First-pass PR review | `pr-review` |
+| Log / failure triage | `log-triage` |
+
 <!-- ai-dev-framework:end -->
 
 
